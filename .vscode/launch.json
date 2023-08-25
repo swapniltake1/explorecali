@@ -1,0 +1,14 @@
+{
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Spring Boot-ExplorecaliApplication<explorecali>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "com.example.ec.ExplorecaliApplication",
+            "projectName": "explorecali",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env"
+        }
+    ]
+}
