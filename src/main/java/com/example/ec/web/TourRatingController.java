@@ -1,17 +1,20 @@
 package com.example.ec.web;
 
 import com.example.ec.domain.TourRating;
-import com.example.ec.repo.TourRatingRepository;
-import com.example.ec.repo.TourRepository;
+import com.example.ec.service.TourRatingService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PagedResourcesAssembler;
+import org.springframework.hateoas.PagedResources;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
-import java.util.NoSuchElementException;
+import java.util.AbstractMap;
 
 /**
  * Tour Rating Controller
@@ -21,13 +24,16 @@ import java.util.NoSuchElementException;
 @RestController
 @RequestMapping(path = "/tours/{tourId}/ratings")
 public class TourRatingController {
-    private TourRatingRepository tourRatingRepository;
-    private TourRepository tourRepository;
+    private static final Logger LOGGER = LoggerFactory.getLogger(TourRatingController.class);
+    private TourRatingService tourRatingService;
+    private RatingAssembler assembler;
+
 
     @Autowired
-    public TourRatingController(TourRatingRepository tourRatingRepository, TourRepository tourRepository) {
-        this.tourRatingRepository = tourRatingRepository;
-        this.tourRepository = tourRepository;
+    public TourRatingController(TourRatingService tourRatingService,
+                                RatingAssembler assembler) {
+        this.tourRatingService = tourRatingService;
+        this.assembler = assembler;
     }
 
     protected TourRatingController() {
@@ -37,130 +43,114 @@ public class TourRatingController {
     /**
      * Create a Tour Rating.
      *
-     * @param tourId tour identifier
-     * @param tourRating rating data transfer object
+     * @param tourId
+     * @param ratingDto
      */
     @PostMapping
+    @PreAuthorize("hasRole('ROLE_CSR')")
     @ResponseStatus(HttpStatus.CREATED)
-    public void createTourRating(@PathVariable(value = "tourId") String tourId,
-                                 @RequestBody @Validated TourRating tourRating) {
-        verifyTour(tourId);
-        tourRatingRepository.save(new TourRating(tourId, tourRating.getCustomerId(),
-                tourRating.getScore(), tourRating.getComment()));
+    public void createTourRating(@PathVariable(value = "tourId") int tourId, @RequestBody @Validated RatingDto ratingDto) {
+        LOGGER.info("POST /tours/{}/ratings", tourId);
+        tourRatingService.createNew(tourId, ratingDto.getCustomerId(), ratingDto.getScore(), ratingDto.getComment());
     }
 
     /**
-     * Lookup a page of Ratings for a tour.
+     * Create Several Tour Ratings for one tour, score and several customers.
      *
-     * @param tourId Tour Identifier
-     * @param pageable paging details
-     * @return Requested page of Tour Ratings as RatingDto's
+     * @param tourId
+     * @param score
+     * @param customers
+     */
+    @PostMapping("/{score}")
+    @PreAuthorize("hasRole('ROLE_CSR')")
+    @ResponseStatus(HttpStatus.CREATED)
+    public void createManyTourRatings(@PathVariable(value = "tourId") int tourId,
+                                      @PathVariable(value = "score") int score,
+                                      @RequestParam("customers") Integer customers[]) {
+        LOGGER.info("POST /tours/{}/ratings/{}", tourId, score);
+        tourRatingService.rateMany(tourId, score, customers);
+    }
+
+     /**
+     * Lookup a the Ratings for a tour.
+     *
+     * @param tourId
+     * @param pageable
+     * @param pagedAssembler
+     * @return HATEOAS enabled page of ratings.
      */
     @GetMapping
-    public Page<TourRating> getRatings(@PathVariable(value = "tourId") String tourId,
-                                            Pageable pageable){
-        return tourRatingRepository.findByTourId(tourId, pageable);
+    public PagedResources<RatingDto> getAllRatingsForTour(@PathVariable(value = "tourId") int tourId, Pageable pageable,
+                                                          PagedResourcesAssembler pagedAssembler) {
+        LOGGER.info("GET /tours/{}/ratings", tourId);
+        Page<TourRating> tourRatingPage = tourRatingService.lookupRatings(tourId, pageable);
+        PagedResources<RatingDto> result =  pagedAssembler.toResource(tourRatingPage, assembler);
+        return result;
     }
 
     /**
      * Calculate the average Score of a Tour.
      *
-     * @param tourId tour identifier
+     * @param tourId
      * @return Tuple of "average" and the average value.
      */
-    @GetMapping(path = "/average")
-    public Map<String, Double> getAverage(@PathVariable(value = "tourId") String tourId) {
-        verifyTour(tourId);
-        return Map.of("average",tourRatingRepository.findByTourId(tourId).stream()
-                .mapToInt(TourRating::getScore).average()
-                .orElseThrow(() ->
-                new NoSuchElementException("Tour has no Ratings")));
+    @GetMapping("/average")
+    public AbstractMap.SimpleEntry<String, Double> getAverage(@PathVariable(value = "tourId") int tourId) {
+        LOGGER.info("GET /tours/{}/ratings/average", tourId);
+        return new AbstractMap.SimpleEntry<String, Double>("average", tourRatingService.getAverageScore(tourId));
     }
 
     /**
      * Update score and comment of a Tour Rating
      *
-     * @param tourId tour identifier
-     * @param tourRating rating Data Transfer Object
+     * @param tourId
+     * @param ratingDto
      * @return The modified Rating DTO.
      */
     @PutMapping
-    public TourRating updateWithPut(@PathVariable(value = "tourId") String tourId,
-                                    @RequestBody @Validated TourRating tourRating) {
-        TourRating rating = verifyTourRating(tourId, tourRating.getCustomerId());
-        rating.setScore(tourRating.getScore());
-        rating.setComment(tourRating.getComment());
-        return tourRatingRepository.save(rating);
+    @PreAuthorize("hasRole('ROLE_CSR')")
+    public RatingDto updateWithPut(@PathVariable(value = "tourId") int tourId, @RequestBody @Validated RatingDto ratingDto) {
+        LOGGER.info("PUT /tours/{}/ratings", tourId);
+        return toDto(tourRatingService.update(tourId, ratingDto.getCustomerId(),
+                 ratingDto.getScore(), ratingDto.getComment()));
     }
     /**
      * Update score or comment of a Tour Rating
      *
-     * @param tourId tour identifier
-     * @param tourRating rating Data Transfer Object
+     * @param tourId
+     * @param ratingDto
      * @return The modified Rating DTO.
      */
     @PatchMapping
-    public TourRating updateWithPatch(@PathVariable(value = "tourId") String tourId,
-                                      @RequestBody @Validated TourRating tourRating) {
-        TourRating rating = verifyTourRating(tourId, tourRating.getCustomerId());
-        if (tourRating.getScore() != null) {
-            rating.setScore(tourRating.getScore());
-        }
-        if (tourRating.getComment() != null) {
-            rating.setComment(tourRating.getComment());
-        }
-        return tourRatingRepository.save(rating);
+    @PreAuthorize("hasRole('ROLE_CSR')")
+    public RatingDto updateWithPatch(@PathVariable(value = "tourId") int tourId, @RequestBody @Validated RatingDto ratingDto) {
+        LOGGER.info("PATCH /tours/{}/ratings", tourId);
+        return toDto(tourRatingService.updateSome(tourId, ratingDto.getCustomerId(),
+                 ratingDto.getScore(), ratingDto.getComment()));
     }
 
     /**
      * Delete a Rating of a tour made by a customer
      *
-     * @param tourId tour identifier
-     * @param customerId customer identifier
+     * @param tourId
+     * @param customerId
      */
-    @DeleteMapping(path = "/{customerId}")
-    public void delete(@PathVariable(value = "tourId") String tourId,
-                       @PathVariable(value = "customerId") int customerId) {
-        TourRating rating = verifyTourRating(tourId, customerId);
-        tourRatingRepository.delete(rating);
+    @DeleteMapping("/{customerId}")
+    @PreAuthorize("hasRole('ROLE_CSR')")
+    public void delete(@PathVariable(value = "tourId") int tourId, @PathVariable(value = "customerId") int customerId) {
+        LOGGER.info("DELETE /tours/{}/ratings/{}", tourId, customerId);
+        tourRatingService.delete(tourId, customerId);
     }
 
     /**
-     * Verify and return the TourRating for a particular tourId and Customer
-     * @param tourId tour identifier
-     * @param customerId customer identifier
-     * @return the found TourRating
-     * @throws NoSuchElementException if no TourRating found
-     */
-    private TourRating verifyTourRating(String tourId, int customerId) throws NoSuchElementException {
-        return tourRatingRepository.findByTourIdAndCustomerId(tourId, customerId).orElseThrow(() ->
-                new NoSuchElementException("Tour-Rating pair for request("
-                + tourId + " for customer" + customerId));
-    }
-
-    /**
-     * Verify and return the Tour given a tourId.
+     * Convert the TourRating entity to a RatingDto
      *
-     * @param tourId tour identifier
-     * @throws NoSuchElementException if no Tour found.
+     * @param tourRating
+     * @return RatingDto
      */
-    private void verifyTour(String tourId) throws NoSuchElementException {
-        if (!tourRepository.existsById(tourId)) {
-            throw new NoSuchElementException("Tour does not exist " + tourId);
-        }
+    private RatingDto toDto(TourRating tourRating) {
+        return assembler.toResource(tourRating);
     }
 
-    /**
-     * Exception handler if NoSuchElementException is thrown in this Controller
-     *
-     * @param ex exception
-     * @return Error message String.
-     */
-    @ResponseStatus(HttpStatus.NOT_FOUND)
-    @ExceptionHandler(NoSuchElementException.class)
-    public String return400(NoSuchElementException ex) {
-        return ex.getMessage();
-
-    }
 
 }

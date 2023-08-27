@@ -1,12 +1,6 @@
 package com.example.ec.domain;
 
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
-
-import javax.validation.constraints.Max;
-import javax.validation.constraints.Min;
-import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Size;
+import javax.persistence.*;
 import java.util.Objects;
 
 /**
@@ -14,52 +8,101 @@ import java.util.Objects;
  *
  * Created by Mary Ellen Bowman
  */
-@Document
+@Entity
+@Table(name="tour_rating")
 public class TourRating {
-
     @Id
-    private String id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
 
-    private String tourId;
+    @ManyToOne
+    @JoinColumn(name = "tour_id")
+    private Tour tour;
 
-    @NotNull
+    @Column(name="customer_id")
     private Integer customerId;
 
-    @Min(0)
-    @Max(5)
+    @Column(nullable = false)
     private Integer score;
 
-    @Size(max = 255)
+    @Column
     private String comment;
 
+    protected TourRating() {
+    }
+
     /**
-     * Construct a new Tour Rating.
+     * Create a fully initialized TourRating.
      *
-     * @param tourId tour identifier
-     * @param customerId customer identifier
-     * @param score Integer score (1-5)
-     * @param comment Optional comment from the customer
+     * @param tour          the tour.
+     * @param customerId    the customer identifier.
+     * @param score      Integer score (1-5)
+     * @param comment    Optional comment from the customer
      */
-    public TourRating(String tourId, Integer customerId, Integer score, String comment) {
-        this.tourId = tourId;
+    public TourRating(Tour tour, Integer customerId, Integer score, String comment) {
+        this.tour = tour;
         this.customerId = customerId;
         this.score = score;
         this.comment = comment;
     }
 
-    protected TourRating() {
+    /**
+     * Create a fully initialized TourRating.
+     *
+     * @param tour          the tour.
+     * @param customerId    the customer identifier.
+     * @param score      Integer score (1-5)
+     */
+    public TourRating(Tour tour, Integer customerId, Integer score) {
+        this.tour = tour;
+        this.customerId = customerId;
+        this.score = score;
+        this.comment = toComment(score);
+    }
+
+    /**
+     * Auto Generate a message for a score.
+     *
+     * @param score
+     * @return
+     */
+    private String toComment(Integer score) {
+        switch (score) {
+            case 1:return "Terrible";
+            case 2:return "Poor";
+            case 3:return "Fair";
+            case 4:return "Good";
+            case 5:return "Great";
+            default: return score.toString();
+        }
+    }
+
+    public Integer getId() {
+        return id;
     }
 
     public Integer getScore() {
         return score;
     }
 
+    public String getComment() {
+        return comment;
+    }
+
+    public Tour getTour() {
+        return tour;
+    }
+
+    public void setTour(Tour tour) {
+        this.tour = tour;
+    }
+
     public Integer getCustomerId() {
         return customerId;
     }
 
-    public String getComment() {
-        return comment;
+    public void setCustomerId(Integer customerId) {
+        this.customerId = customerId;
     }
 
     public void setScore(Integer score) {
@@ -76,7 +119,7 @@ public class TourRating {
         if (o == null || getClass() != o.getClass()) return false;
         TourRating that = (TourRating) o;
         return Objects.equals(id, that.id) &&
-                Objects.equals(tourId, that.tourId) &&
+                Objects.equals(tour, that.tour) &&
                 Objects.equals(customerId, that.customerId) &&
                 Objects.equals(score, that.score) &&
                 Objects.equals(comment, that.comment);
@@ -84,17 +127,6 @@ public class TourRating {
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, tourId, customerId, score, comment);
-    }
-
-    @Override
-    public String toString() {
-        return "TourRating{" +
-                "id='" + id + '\'' +
-                ", tourId='" + tourId + '\'' +
-                ", customerId=" + customerId +
-                ", score=" + score +
-                ", comment='" + comment + '\'' +
-                '}';
+        return Objects.hash(id, tour, customerId, score, comment);
     }
 }
