@@ -12,7 +12,11 @@ import java.util.Objects;
 @Entity
 public class Tour implements Serializable{
     @Id
+<<<<<<< HEAD
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+=======
+    @GeneratedValue
+>>>>>>> dbbae867c3d01746c9c131b30d592a7174dded14
     private Integer id;
 
     @Column
@@ -38,11 +42,17 @@ public class Tour implements Serializable{
 
 
     @ManyToOne
+<<<<<<< HEAD
     @JoinColumn(name="tour_package_code")
     private TourPackage tourPackage;
 
     @Column
     @Enumerated(EnumType.STRING)
+=======
+    private TourPackage tourPackage;
+
+    @Column
+>>>>>>> dbbae867c3d01746c9c131b30d592a7174dded14
     private Difficulty difficulty;
 
     @Column
@@ -73,6 +83,7 @@ public class Tour implements Serializable{
         return title;
     }
 
+<<<<<<< HEAD
     public String getDescription() {
         return description;
     }
@@ -81,18 +92,61 @@ public class Tour implements Serializable{
         return blurb;
     }
 
+=======
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public String getBlurb() {
+        return blurb;
+    }
+
+    public void setBlurb(String blurb) {
+        this.blurb = blurb;
+    }
+
+>>>>>>> dbbae867c3d01746c9c131b30d592a7174dded14
     public Integer getPrice() {
         return price;
     }
 
+<<<<<<< HEAD
+=======
+    public void setPrice(Integer price) {
+        this.price = price;
+    }
+
+>>>>>>> dbbae867c3d01746c9c131b30d592a7174dded14
     public String getDuration() {
         return duration;
     }
 
+<<<<<<< HEAD
+=======
+    public void setDuration(String duration) {
+        this.duration = duration;
+    }
+
+>>>>>>> dbbae867c3d01746c9c131b30d592a7174dded14
     public String getBullets() {
         return bullets;
     }
 
+<<<<<<< HEAD
+=======
+    public void setBullets(String bullets) {
+        this.bullets = bullets;
+    }
+
+>>>>>>> dbbae867c3d01746c9c131b30d592a7174dded14
     public String getKeywords() {
         return keywords;
     }
@@ -101,12 +155,36 @@ public class Tour implements Serializable{
         return tourPackage;
     }
 
+<<<<<<< HEAD
+=======
+    public void setTourPackage(TourPackage tourPackage) {
+        this.tourPackage = tourPackage;
+    }
+
+    public void setKeywords(String keywords) {
+        this.keywords = keywords;
+    }
+
+>>>>>>> dbbae867c3d01746c9c131b30d592a7174dded14
     public Difficulty getDifficulty() {
         return difficulty;
     }
 
+<<<<<<< HEAD
     public Region getRegion() {
         return region;
+=======
+    public void setDifficulty(Difficulty difficulty) {
+        this.difficulty = difficulty;
+    }
+
+    public Region getRegion() {
+        return region;
+    }
+
+    public void setRegion(Region region) {
+        this.region = region;
+>>>>>>> dbbae867c3d01746c9c131b30d592a7174dded14
     }
 
     @Override

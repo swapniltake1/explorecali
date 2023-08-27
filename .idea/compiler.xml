@@ -9,5 +9,11 @@
         <module name="explorecali" />
       </profile>
     </annotationProcessing>
+<<<<<<< HEAD
+=======
+    <bytecodeTargetLevel>
+      <module name="explorecali" target="1.8" />
+    </bytecodeTargetLevel>
+>>>>>>> dbbae867c3d01746c9c131b30d592a7174dded14
   </component>
 </project>

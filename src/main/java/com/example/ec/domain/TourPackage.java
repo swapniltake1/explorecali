@@ -3,7 +3,10 @@ package com.example.ec.domain;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
+<<<<<<< HEAD
 import javax.persistence.Table;
+=======
+>>>>>>> dbbae867c3d01746c9c131b30d592a7174dded14
 import java.io.Serializable;
 import java.util.Objects;
 
@@ -12,7 +15,10 @@ import java.util.Objects;
  *
  * Created by Mary Ellen Bowman
  */
+<<<<<<< HEAD
 @Table(name="tour_package")
+=======
+>>>>>>> dbbae867c3d01746c9c131b30d592a7174dded14
 @Entity
 public class TourPackage implements Serializable {
     @Id
